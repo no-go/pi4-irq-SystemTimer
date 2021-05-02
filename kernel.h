@@ -8,6 +8,26 @@ extern void dispatch (void);
 extern void PUT32 (unsigned int, unsigned int);
 extern unsigned int GET32 (unsigned int);
 
+enum {
+    C_black     = 0xFF000000,
+    C_blue      = 0xFF0000AA,
+    C_green     = 0xFF00AA00,
+    C_cyan      = 0xFF00AAAA,
+    C_red       = 0xFFAA0000,
+    C_violett   = 0xFFAA00AA,
+    C_brown     = 0xFFAA5500,
+    C_lightgray = 0xFFAAAAAA,
+    
+    C_gray      = 0xFF555555,
+    C_lightblue = 0xFFABABFF,
+    C_lightgreen= 0xFFABFFAB,
+    C_lightcyan = 0xFF55FFFF,
+    C_lightred  = 0xFFFF5555,
+    C_pink      = 0xFFFF55FF,
+    C_yellow    = 0xFFFFFF55,
+    C_white     = 0xFFFFFFFF
+};
+
 // Pi4 B, BCM2711, 4MB Base Addresses
 #define MMIO_BASE       0xFE000000
 
