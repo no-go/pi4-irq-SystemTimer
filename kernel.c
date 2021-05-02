@@ -3,9 +3,25 @@
 // a properly aligned message buffer with: 9x4 byte long mes-
 // sage setting feature PL011 UART Clock to 3MHz (and some TAGs and
 // sizes of parameter in message)
-volatile unsigned int __attribute__((aligned(16))) mbox[9] = { 36, 0, 0x38002, 12, 8, 2, 3000000, 0, 0 };
+volatile unsigned int __attribute__((aligned(16))) mbox[9] = { 9*4, 0, 0x38002, 12, 8, 2, 3000000, 0, 0 };
+
+// better: reuse mbox
+volatile unsigned int __attribute__((aligned(16))) graphics_message[31] = {
+    31*4, 0,
+    0x48003, 8,8, 640,480,
+    0x48004, 8,8, 640,480,
+    0x48009, 8,8, 0,0,
+    0x48005, 4,4, 32, // 32bits per pixel
+    0x48006, 4,4, 1, // 1 = ARGB
+    0x48001, 8,8, 4096,0, // get pointer addr
+    0
+};
 
 unsigned long _regs[37];
+unsigned char * graphics_lfb;
+int graphics_width = 640;
+int graphics_height = 480;
+int systime = 0;
 
 void uart_send (unsigned int c) {
     /* wait until we can send */
@@ -14,15 +30,22 @@ void uart_send (unsigned int c) {
     PUT32(UART3_DR, c);
 }
 
+void graphics_set (int x, int y, int white) {
+    if (x<0 || x >= graphics_width || y<0 || y >= graphics_height) return;
+
+    int offs = (y * 4 * graphics_width) + (x * 4); // 4 byte = 32bit
+    *((unsigned int*)(graphics_lfb + offs)) = (white==1 ? 0xFFFFFFFF : 0xFF000000);
+}
+
 void dispatch (void) {
     // get one of the pending "Shared Peripheral Interrupt"
     unsigned int spi = GET32(GICC_ACK);
-    uart_send('i');
     
     while (spi != GIC_SPURIOUS) { // loop until no SPIs are pending on GIC
         if (spi == PIT_SPI) {
-            uart_send('t');
-            PUT32(PIT_Compare3, GET32(PIT_LOW) + 5000000); // next in 5sec
+            uart_send('i');
+            //systime++;
+            PUT32(PIT_Compare3, GET32(PIT_LOW) + 1000000); // next in 1sec
             PUT32(PIT_STATUS, 1 << PIT_MASKBIT); // clear IRQ in System Timer chip
         }
         // clear the pending
@@ -32,6 +55,26 @@ void dispatch (void) {
     }
 }
 
+void graphics_init (void) {
+    graphics_message[5] = graphics_width;
+    graphics_message[6] = graphics_height;
+    
+    // 28-bit address (MSB) and 4-bit value (LSB)
+    unsigned int req = (((unsigned int)((long)&graphics_message)& ~0xF) | 0x8);
+
+    // wait until we can write to the mailbox
+    do{asm volatile("nop");}while(GET32(MBOX_STATUS) & MBOX_FULL);
+    // write the address of our message to the mailbox with channel identifier
+    PUT32(MBOX_WRITE, req);
+    // now wait for the response
+    while (
+        ( GET32(MBOX_STATUS) & MBOX_EMPTY ) || ( GET32(MBOX_READ) != req )
+    ) {}
+    
+    graphics_message[28] &= 0x3FFFFFFF;
+    graphics_lfb = (unsigned char *) ( (long) graphics_message[28] );
+}
+
 // initialize PL011 UART3 on GPIO4 and 5
 void uart_init (void) {
     unsigned int i;
@@ -39,7 +82,7 @@ void uart_init (void) {
     PUT32(UART3_CR, 0); // turn off UART3
     
     // set up clock for consistent divisor values
-    unsigned int req = (((unsigned int)((unsigned long)&mbox)&~0xF) | 0x8);
+    unsigned int req = (((unsigned int)((long)&mbox)& ~0xF) | 0x8);
     // wait until we can write to the mailbox
     do{asm volatile("nop");}while(GET32(MBOX_STATUS) & MBOX_FULL);
     // write the address of our message to the mailbox with channel identifier
@@ -117,28 +160,39 @@ void main () {
 
     // PIT plugin (System Timer)
     PUT32(GICD_ENABLE + 4 * (PIT_SPI / 32), 1 << (PIT_SPI % 32));
-    PUT32(PIT_Compare3, 12000000); // inital first IRQ in 12sec
+    PUT32(PIT_Compare3, 8000000); // inital first IRQ in 8sec
     PUT32(PIT_STATUS, 1 << PIT_MASKBIT);
+
+    //graphics_init();
 
     // IRQs on
     asm volatile( "msr daifclr, #2" ); 
 
     uart_init();
     
-    // welcome from the uart !!!
+    // welcome to uart !!!
     uart_send('b');
     uart_send('o');
     uart_send('o');
     uart_send('\r');
     uart_send('\n');
     
+    
     // the main loop ---------------------------------
-    unsigned long long x=0;
+    int x=0;
+    int y=0;
+    
     while (1) {
-        if (x%500000 == 0) {
-            // we are in the main loop
-            uart_send('m');
+        for (y=0; y<graphics_height; ++y) {
+            for (x=0; x<graphics_width; ++x) {
+                
+                if (y*graphics_width + x == systime) {
+                    ;//graphics_set(x, y, 1);
+                } else {
+                    ;//graphics_set(x, y, 0);
+                }
+            }
         }
-        x++;
+        uart_send('m');
     }
 }
