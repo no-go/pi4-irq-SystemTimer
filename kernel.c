@@ -21,7 +21,10 @@ unsigned long _regs[37];
 unsigned char * graphics_lfb;
 int graphics_width;
 int graphics_height;
-int systime;
+
+int hours;
+int minutes;
+int tenthsec;
 
 void uart_send (unsigned int c) {
     /* wait until we can send */
@@ -44,7 +47,7 @@ void dispatch (void) {
     while (spi != GIC_SPURIOUS) { // loop until no SPIs are pending on GIC
         if (spi == PIT_SPI) {
             uart_send('t');
-            systime++;
+            tenthsec++;
             PUT32(PIT_Compare3, GET32(PIT_LOW) + 100000); // next in 0.1sec
             PUT32(PIT_STATUS, 1 << PIT_MASKBIT); // clear IRQ in System Timer chip
         }
@@ -64,26 +67,21 @@ void graphics_init (void) {
     
     // write the address of our message to the mailbox with channel identifier
     PUT32(MBOX_WRITE, req);
-    // now wait for the response
-    while (1) {
-        // Is there a reply?
-        while (GET32(MBOX_STATUS) & MBOX_EMPTY);
+    
+    // Is there a reply?
+    while (GET32(MBOX_STATUS) & MBOX_EMPTY);
 
-        // Is it a reply to our message?
-        if (req == GET32(MBOX_READ)) {
-            // Is it successful?
-            if (graphics_message[1] == MBOX_RESPONSE) {
-                graphics_message[28] &= 0x3FFFFFFF;
-                graphics_width = graphics_message[5];
-                graphics_height = graphics_message[6];
-                graphics_lfb = (unsigned char *) ( (long) graphics_message[28] );
-                uart_send('g');
-            }
-            break;
+    // Is it a reply to our message?
+    if (req == GET32(MBOX_READ)) {
+        // Is it successful?
+        if (graphics_message[1] == MBOX_RESPONSE) {
+            graphics_message[28] &= 0x3FFFFFFF;
+            graphics_width = graphics_message[5];
+            graphics_height = graphics_message[6];
+            graphics_lfb = (unsigned char *) ( (long) graphics_message[28] );
+            uart_send('g');
         }
     }
-    
-
 }
 
 // initialize PL011 UART3 on GPIO4 and 5
@@ -164,7 +162,10 @@ void gic_init (void) {
 }
 
 void main () {    
-    systime = 0;
+    hours = 0;
+    minutes = 0;
+    tenthsec = 0;
+
     // interrupts off/mask
     asm ("msr daifset, #2");
 
@@ -190,13 +191,29 @@ void main () {
     graphics_init();
     
     // the main loop ---------------------------------
-    
+    int colorbar = 1;
     while (1) {
-        graphics_set(systime, 300, 1);
-        graphics_set(systime, 301, 1);
-        graphics_set(systime, 302, 1);
+        asm ("wfi"); // cool. core0 just wait until interrupt comes
+
+        if (tenthsec >= 600) {
+            minutes++;
+            tenthsec = 0;
+            colorbar = (colorbar==1? 0 : 1);
+        }
         
-        //asm ("wfi");
+        if (minutes == 60) {
+            hours++;
+            minutes = 0;
+        }
+        
+        if (hours == 24) {
+            hours = 0;
+        }
+        
+        graphics_set(20+tenthsec, 400, colorbar);
+        graphics_set(20+tenthsec, 401, colorbar);
+        graphics_set(20+tenthsec, 402, colorbar);
+        
         //uart_send('m');
     }
 }
