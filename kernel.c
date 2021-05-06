@@ -224,8 +224,6 @@ void graphics_init (void) {
 
 // initialize PL011 UART3 on GPIO4 and 5
 void uart_init (void) {
-    unsigned int i;
-
     PUT32(UART3_CR, 0); // turn off UART3
     
     // set up clock for consistent divisor values
@@ -241,18 +239,18 @@ void uart_init (void) {
 
     // map UART3 to GPIO pins
     register unsigned int r = GET32(GPFSEL0);
-    r &= ~((7<<12)|(7<<15));    // 000 to gpio4, gpio5
+    r &= ~((7<<12)|(7<<15));    // 111 to gpio4, gpio5 (mask/clear)
     r |= (3<<12)|(3<<15);       // 011 = alt4
     PUT32(GPFSEL0, r);
-    PUT32(GPPUD, 0);                 // enable pins 4 and 5
-    
-    i=350; while(i--) { asm volatile("nop"); } // a short "wait"
-    PUT32(GPPUDCLK0, (1<<14)|(1<<15));
-    i=350; while(i--) { asm volatile("nop"); } // a short "wait"
-    PUT32(GPPUDCLK0, 0);        // flush GPIO setup
 
-    PUT32(UART3_ICR, 0x7FF);    // clear interrupts in PL011 Chip
-    
+    // remove pullup or pulldown
+    r = GET32(GPPUPPDN0);
+    r &= ~((3<<8)|(3<<10));     // 11 to gpio4, gpio5 (mask/clear)
+    r |= (0<<8)|(0<<10);        // 00 = no pullup or down
+    PUT32(GPPUPPDN0, r);
+
+    // clear interrupts in PL011 Chip
+    PUT32(UART3_ICR, 0x7FF);
     // Divider = 3000000MHz/(16 * 115200) = 1.627 = ~1.
     // Fractional part register = (.627 * 64) + 0.5 = 40.6 = ~40.
     PUT32(UART3_IBRD, 1);       // 115200 baud = 1 40
