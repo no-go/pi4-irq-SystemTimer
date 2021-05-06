@@ -59,7 +59,6 @@ enum {
 
 // GPIOs
 #define GPFSEL0         (MMIO_BASE+0x00200000)
-#define GPSET0          (MMIO_BASE+0x0020001C)
 #define GPPUPPDN0       (MMIO_BASE+0x002000E4)
 
 // PL011 UART
