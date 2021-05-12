@@ -1,0 +1,10 @@
+# additionally you need on sd card tihs boot files:
+# - a bootcode.bin
+# - a start.elf
+# - a fixup.dat
+# - your compiled kernel.img
+
+
+[all]
+# Display Monitor Timings and is the standard that is typically used by monitors
+hdmi_group=2

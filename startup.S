@@ -1,7 +1,7 @@
 .section ".text.boot"
 
-#define _STACK      0x80000
-#define _EXCSTACK   0x40000
+#define _STACK      0x8000
+#define _EXCSTACK   0x4000
 .extern _regs
 .extern main
 .extern dispatch

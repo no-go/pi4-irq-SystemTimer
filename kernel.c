@@ -30,14 +30,14 @@ int tenthsec;
 int old_tenthsec;
 
 void uart_send (unsigned int c) {
-    while(GET32(UART3_FR)&0x20);
-    PUT32(UART3_DR, c);
+    while(GET32(UART0_FR)&0x20);
+    PUT32(UART0_DR, c);
 }
 
 char uart_get (void) {
     char r;
-    while(GET32(UART3_FR)&0x10);
-    r=(char)GET32(UART3_DR);
+    while(GET32(UART0_FR)&0x10);
+    r=(char)GET32(UART0_DR);
     return r=='\r'?'\n':r;
 }
 
@@ -181,19 +181,15 @@ int myFont (int x, int y, int b, int he, int col, int fillCol) {
   
 void dispatch (void) {
     // get one of the pending "Shared Peripheral Interrupt"
-    unsigned int spi = GET32(GICC_ACK);
+    unsigned int irq = GET32(IRQ1_PENDING_31_00);
     
-    while (spi != GIC_SPURIOUS) { // loop until no SPIs are pending on GIC
-        if (spi == PIT_SPI) {
-            //uart_send('t');
-            tenthsec++;
-            PUT32(PIT_Compare3, GET32(PIT_LOW) + 100000); // next in 0.1sec
-            PUT32(PIT_STATUS, 1 << PIT_MASKBIT); // clear IRQ in System Timer chip
-        }
-        // clear the pending
-        PUT32(GICC_EOI, spi);
-        // get the next
-        spi = GET32(GICC_ACK);
+    // is it the Comparator3 Timer IRQ?
+    if (irq & (1 << PIT_IRQ) > 0) {
+        //uart_send('t');
+        tenthsec++;
+        PUT32(PIT_Compare3, GET32(PIT_LOW) + 100000); // next in 0.1sec
+        PUT32(PIT_STATUS, 1 << PIT_MASKBIT); // clear IRQ in System Timer chip
+        // clear the pending ?
     }
 }
 
@@ -224,7 +220,7 @@ void graphics_init (void) {
 
 // initialize PL011 UART3 on GPIO4 and 5
 void uart_init (void) {
-    PUT32(UART3_CR, 0); // turn off UART3
+    PUT32(UART0_CR, 0); // turn off UART3
     
     // set up clock for consistent divisor values
     unsigned int req = (((unsigned int)((long)&mbox)& ~0xF) | 0x8);
@@ -237,64 +233,30 @@ void uart_init (void) {
         ( GET32(MBOX_STATUS) & MBOX_EMPTY ) || ( GET32(MBOX_READ) != req )
     ) {}
 
-    // map UART3 to GPIO pins
-    register unsigned int r = GET32(GPFSEL0);
-    r &= ~((7<<12)|(7<<15));    // 111 to gpio4, gpio5 (mask/clear)
-    r |= (3<<12)|(3<<15);       // 011 = alt4
-    PUT32(GPFSEL0, r);
+    // map UART0 to GPIO pins
+    register unsigned int r = GET32(GPFSEL1);
+    r &= ~((7<<12)|(7<<15));    // 111 to gpio14, gpio15 (mask/clear)
+    r |= (4<<12)|(4<<15);       // 100 = alt0
+    PUT32(GPFSEL1, r);
 
     // remove pullup or pulldown
-    r = GET32(GPPUPPDN0);
-    r &= ~((3<<8)|(3<<10));     // 11 to gpio4, gpio5 (mask/clear)
-    r |= (0<<8)|(0<<10);        // 00 = no pullup or down
-    PUT32(GPPUPPDN0, r);
+    PUT32(GPPUD,0);
+    for(r=0;r<150;r++) asm volatile("nop");
+    PUT32(GPPUDCLK0,(1<<14)|(1<<15));
+    for(r=0;r<150;r++) asm volatile("nop");
+    PUT32(GPPUDCLK0,0);
 
     // clear interrupts in PL011 Chip
-    PUT32(UART3_ICR, 0x7FF);
+    PUT32(UART0_ICR, 0x7FF);
     // Divider = 3000000MHz/(16 * 115200) = 1.627 = ~1.
     // Fractional part register = (.627 * 64) + 0.5 = 40.6 = ~40.
-    PUT32(UART3_IBRD, 1);       // 115200 baud = 1 40
-    PUT32(UART3_FBRD, 40);
+    PUT32(UART0_IBRD, 1);       // 115200 baud = 1 40
+    PUT32(UART0_FBRD, 40);
     
     // Enable FIFO and 8 bit data transmission (1 stop bit, no parity)
-    PUT32(UART3_LCRH, (1 << 6) | (1 << 5) | (1 << 4));
+    PUT32(UART0_LCRH, (1 << 6) | (1 << 5) | (1 << 4));
     // enable Tx, Rx, FIFO 
-    PUT32(UART3_CR, (1 << 9) | (1 << 8) | (1 << 0));
-}
-
-// initialize GIC-400
-void gic_init (void) {
-    unsigned int i;
-    
-    // disable Distributor and CPU interface
-    PUT32(GICD_CTLR, 0);
-    PUT32(GICC_CTLR, 0);
-
-    // disable, acknowledge and deactivate all interrupts
-    for (i = 0; i < (GIC_IRQS/32); ++i) {
-        PUT32(GICD_DISABLE     + 4*i, ~0);
-        PUT32(GICD_PEND_CLR    + 4*i, ~0);
-        PUT32(GICD_ACTIVE_CLR  + 4*i, ~0);
-    }
-
-    // direct all interrupts to core 0 (=01) with default priority a0
-    for (i = 0; i < (GIC_IRQS/4); ++i) {
-        PUT32(GICD_TARGET + 4*i, 0x01010101);
-        PUT32(GICD_PRIO   + 4*i, 0xa0a0a0a0);
-    }
-
-    // config all interrupts to level triggered
-    for (i = 0; i < (GIC_IRQS/16); ++i) {
-        PUT32(GICD_CFG + 4*i, 0);
-    }
-
-    // enable Distributor
-    PUT32(GICD_CTLR, 1);
-
-    // set Core0 interrupts mask theshold prio to F0, to react on higher prio a0
-    PUT32(GICC_PRIO, 0xF0);
-    // enable CPU interface
-    PUT32(GICC_CTLR, 1);
+    PUT32(UART0_CR, (1 << 9) | (1 << 8) | (1 << 0));
 }
 
 void setHHMM (int d1, int d2) {
@@ -322,11 +284,13 @@ void main () {
     // interrupts off/mask
     asm ("msr daifset, #2");
 
-    gic_init();
-
-    // PIT plugin (System Timer)
-    PUT32(GICD_ENABLE + 4 * (PIT_SPI / 32), 1 << (PIT_SPI % 32));
-    PUT32(PIT_Compare3, 12000000); // inital first IRQ in 12sec
+    // PIT plugin (System Timer) in Interrupt Controller
+    unsigned int dummy = GET32(IRQ1_SET_31_00);
+    dummy |= 1 << PIT_IRQ;
+    PUT32(IRQ1_SET_31_00, dummy);
+    
+    // inital first IRQ in 12sec
+    PUT32(PIT_Compare3, 12000000);
     PUT32(PIT_STATUS, 1 << PIT_MASKBIT);
 
     // IRQs on
@@ -366,7 +330,7 @@ void main () {
         old_tenthsec = tenthsec/10;
         asm ("wfi"); // cool. core0 just wait until interrupt comes
         
-        if ((GET32(UART3_FR)&0x10) == 0) {
+        if ((GET32(UART0_FR)&0x10) == 0) {
             cmdline[cmdi] = uart_get();
             uart_send(cmdline[cmdi]);
             if (cmdline[cmdi] == '\n') {

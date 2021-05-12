@@ -28,47 +28,37 @@ enum {
     C_white     = 0xFFFFFFFF
 };
 
-// Pi4 B, BCM2711, 4MB Base Addresses
-#define MMIO_BASE       0xFE000000
+// Pi1, BCM2835, Base Addresses
+#define MMIO_BASE       0x20000000
 
 // System Timer (and Comparator 3)
 #define PIT_STATUS      (MMIO_BASE+0x00003000)
 #define PIT_LOW         (MMIO_BASE+0x00003004)
 #define PIT_Compare3    (MMIO_BASE+0x00003018)
-#define PIT_SPI         99
+#define PIT_IRQ         3
 #define PIT_MASKBIT     3
 
-// IRQ and GIC-400
-#define GIC_IRQS        192
-#define GIC_SPURIOUS    1023
-#define GICD_BASE       0xFF841000
-#define GICD_CTLR       (GICD_BASE + 0x000)
-#define GICD_ENABLE     (GICD_BASE + 0x100)
-#define GICD_DISABLE    (GICD_BASE + 0x180)
-#define GICD_PEND_CLR   (GICD_BASE + 0x280)
-#define GICD_ACTIVE_CLR (GICD_BASE + 0x380)
-#define GICD_PRIO       (GICD_BASE + 0x400)
-#define GICD_TARGET     (GICD_BASE + 0x800)
-#define GICD_CFG        (GICD_BASE + 0xc00)
-// GIC-400 CPU Interface Controller
-#define GICC_BASE       0xFF842000
-#define GICC_CTLR       (GICC_BASE + 0x000)
-#define GICC_PRIO       (GICC_BASE + 0x004)
-#define GICC_ACK        (GICC_BASE + 0x00c)
-#define GICC_EOI        (GICC_BASE + 0x010)
+// https://xinu.cs.mu.edu/index.php/BCM2835_Interrupt_Controller
+// shared IRQ (Legacy Interrupt Controller)
+#define IRQ1_PENDING_31_00  (MMIO_BASE+0x0000B204)
+// Register to set and see enabled non Basic IRQs 31..0
+#define IRQ1_SET_31_00      (MMIO_BASE+0x0000B210)  
+// Register to Disable = Clear = Mask IRQs 31..0
+#define IRQ1_CLEAR_31_00    (MMIO_BASE+0x0000B21C)
 
 // GPIOs
-#define GPFSEL0         (MMIO_BASE+0x00200000)
-#define GPPUPPDN0       (MMIO_BASE+0x002000E4)
+#define GPFSEL1         (MMIO_BASE+0x00200004)
+#define GPPUD           (MMIO_BASE+0x00200094)
+#define GPPUDCLK0       (MMIO_BASE+0x00200098)
 
 // PL011 UART
-#define UART3_DR        (MMIO_BASE+0x00201600)
-#define UART3_FR        (MMIO_BASE+0x00201618)
-#define UART3_IBRD      (MMIO_BASE+0x00201624)
-#define UART3_FBRD      (MMIO_BASE+0x00201628)
-#define UART3_LCRH      (MMIO_BASE+0x0020162C)
-#define UART3_CR        (MMIO_BASE+0x00201630)
-#define UART3_ICR       (MMIO_BASE+0x00201644)
+#define UART0_DR        (MMIO_BASE+0x00201000)
+#define UART0_FR        (MMIO_BASE+0x00201018)
+#define UART0_IBRD      (MMIO_BASE+0x00201024)
+#define UART0_FBRD      (MMIO_BASE+0x00201028)
+#define UART0_LCRH      (MMIO_BASE+0x0020102C)
+#define UART0_CR        (MMIO_BASE+0x00201030)
+#define UART0_ICR       (MMIO_BASE+0x00201044)
 
 // GPU messagebox
 #define MBOX_READ       (MMIO_BASE+0x0000B880)
