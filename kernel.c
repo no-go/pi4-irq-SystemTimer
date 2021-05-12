@@ -184,7 +184,7 @@ void dispatch (void) {
     unsigned int irq = GET32(IRQ1_PENDING_31_00);
     
     // is it the Comparator3 Timer IRQ?
-    if (irq & (1 << PIT_IRQ) > 0) {
+    if ( (irq & (1 << PIT_IRQ)) > 0) {
         //uart_send('t');
         tenthsec++;
         PUT32(PIT_Compare3, GET32(PIT_LOW) + 100000); // next in 0.1sec
@@ -281,8 +281,8 @@ void setHHMM (int d1, int d2) {
 }
 
 void main () {    
-    // interrupts off/mask
-    asm ("msr daifset, #2");
+    // interrupts disable
+    asm ("cpsid i");
 
     // PIT plugin (System Timer) in Interrupt Controller
     unsigned int dummy = GET32(IRQ1_SET_31_00);
@@ -293,8 +293,8 @@ void main () {
     PUT32(PIT_Compare3, 12000000);
     PUT32(PIT_STATUS, 1 << PIT_MASKBIT);
 
-    // IRQs on
-    asm ("msr daifclr, #2"); 
+    // IRQs enable
+    asm ("cpsie i"); 
 
     uart_init();
     

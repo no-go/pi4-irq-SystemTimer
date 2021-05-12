@@ -4,10 +4,14 @@ CXX = arm-none-eabi-gcc
 LINKER = arm-none-eabi-ld
 OBJCPY = arm-none-eabi-objcopy
 
+# gcc -c -Q -march=native --help=target 
+
 CFILES = $(wildcard ./*.c)
 OFILES = $(CFILES:.c=.o)
 INCLUDES = -I./
-GCCFLAGS = -Wall -O0 -ffreestanding -nostdinc -nostdlib -nostartfiles
+GCCFLAGS = -Wall -O0 \
+	-march=armv6zk -mcpu=arm1176jzf-s \
+	-ffreestanding -nostdinc -nostdlib -nostartfiles
 LDFLAGS = -nostdlib -nostartfiles $(INCLUDES)
 DELETE = rm
 
