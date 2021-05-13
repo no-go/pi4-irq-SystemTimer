@@ -19,7 +19,6 @@ volatile unsigned int __attribute__((aligned(16))) graphics_message[31] = {
     0
 };
 
-unsigned long _regs[37];
 unsigned char * graphics_lfb;
 int graphics_width;
 int graphics_height;
@@ -307,8 +306,8 @@ void main () {
     dummy |= 1 << PIT_IRQ;
     PUT32(IRQ1_SET_31_00, dummy);
     
-    // inital first IRQ in 12sec
-    PUT32(PIT_Compare3, 12000000);
+    // inital first IRQ in 5sec
+    PUT32(PIT_Compare3, 5000000);
     PUT32(PIT_STATUS, 1 << PIT_MASKBIT);
 
     // IRQs enable
@@ -345,7 +344,6 @@ void main () {
     int cmdi = 0;
     
     while (1) {
-        old_tenthsec = tenthsec/10;
         asm ("wfi"); // cool. core0 just wait until interrupt comes
         
         if ((GET32(UART0_FR)&0x10) == 0) {
@@ -362,6 +360,7 @@ void main () {
                 
                 setHHMM(hours, minutes);
                 cmdi = 0;
+                uart_send('\r');
             } else {
                 cmdi = (cmdi+1)%10;
             }
@@ -431,6 +430,7 @@ void main () {
                 myFont(pos, 120, old_tenthsec, 140, C_black, C_black);
                 myFont(pos, 120, tenthsec/10, 140, C_white, C_black);
             }
+            old_tenthsec = tenthsec/10;
         }
         line(20, 290, 20+tenthsec, 290, colorbar);
         line(20, 291, 20+tenthsec, 291, colorbar);
