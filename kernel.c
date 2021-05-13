@@ -377,7 +377,6 @@ void main () {
 
             minutes++;
             tenthsec = 0;
-            colorbar = (colorbar==C_red? C_lightcyan : C_red);
             
             if (minutes < 10) {
                 myFont(245, 120, 0, 140, C_white, C_black);
@@ -388,6 +387,7 @@ void main () {
         }
         
         if (minutes == 60) {
+            colorbar = C_black;
             if (hours < 10) {
                 myFont(85, 120, hours, 140, C_black, C_black);
             } else {
@@ -429,6 +429,9 @@ void main () {
             } else {
                 myFont(pos, 120, old_tenthsec, 140, C_black, C_black);
                 myFont(pos, 120, tenthsec/10, 140, C_white, C_black);
+            }
+            if (old_tenthsec%30 == 0) {
+                colorbar += 0x55;
             }
             old_tenthsec = tenthsec/10;
         }
