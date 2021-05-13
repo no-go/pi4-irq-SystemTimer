@@ -430,13 +430,14 @@ void main () {
                 myFont(pos, 120, old_tenthsec, 140, C_black, C_black);
                 myFont(pos, 120, tenthsec/10, 140, C_white, C_black);
             }
-            if (old_tenthsec%30 == 0) {
-                colorbar += 0x55;
+            if (old_tenthsec%20 == 0) {
+                colorbar += 0x23261;
+                colorbar |= 0xFF000000;
             }
             old_tenthsec = tenthsec/10;
         }
-        line(20, 290, 20+tenthsec, 290, colorbar);
-        line(20, 291, 20+tenthsec, 291, colorbar);
-        line(20, 292, 20+tenthsec, 292, colorbar);
+        line(20, 300, 20+tenthsec, 300, colorbar);
+        line(20, 301, 20+tenthsec, 301, colorbar);
+        line(20, 302, 20+tenthsec, 302, colorbar);
     }
 }
