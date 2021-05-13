@@ -178,18 +178,36 @@ int myFont (int x, int y, int b, int he, int col, int fillCol) {
     b = b - t;
     return myFont(pos+FONTPADDING, y, b, he, col, fillCol);
 }
-  
+
+// some parts from the circle lib
 void dispatch (void) {
-    // get one of the pending "Shared Peripheral Interrupt"
-    unsigned int irq = GET32(IRQ1_PENDING_31_00);
-    
-    // is it the Comparator3 Timer IRQ?
-    if ( (irq & (1 << PIT_IRQ)) > 0) {
-        //uart_send('t');
-        tenthsec++;
-        PUT32(PIT_Compare3, GET32(PIT_LOW) + 100000); // next in 0.1sec
-        PUT32(PIT_STATUS, 1 << PIT_MASKBIT); // clear IRQ in System Timer chip
-        // clear the pending ?
+    unsigned nReg = 0;
+    unsigned Pending[3];
+    Pending[0] = GET32(IRQ1_PENDING_31_00);
+    Pending[1] = GET32(IRQ2_PENDING_31_00);
+    Pending[2] = GET32(IRQ0_PENDING_31_00) & 0xFF;
+
+    for (nReg = 0; nReg < 3; ++nReg) {
+        unsigned nPending = Pending[nReg];
+        if (nPending != 0) {
+            unsigned nIRQ = nReg * 32;
+
+            do {
+                if (nPending & 1) {
+                    if (nIRQ == PIT_IRQ) {
+                        //uart_send('t');
+                        tenthsec++;
+                        PUT32(PIT_Compare3, GET32(PIT_LOW) + 100000); // next in 0.1sec
+                        PUT32(PIT_STATUS, 1 << PIT_MASKBIT); // clear IRQ in System Timer chip
+                        // clear the pending ?
+                        return;
+                    }
+                }
+
+                nPending >>= 1;
+                nIRQ++;
+            } while (nPending != 0);
+        }
     }
 }
 

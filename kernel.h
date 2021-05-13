@@ -41,6 +41,8 @@ enum {
 // https://xinu.cs.mu.edu/index.php/BCM2835_Interrupt_Controller
 // shared IRQ (Legacy Interrupt Controller)
 #define IRQ1_PENDING_31_00  (MMIO_BASE+0x0000B204)
+#define IRQ2_PENDING_31_00  (MMIO_BASE+0x0000B208)
+#define IRQ0_PENDING_31_00  (MMIO_BASE+0x0000B200)
 // Register to set and see enabled non Basic IRQs 31..0
 #define IRQ1_SET_31_00      (MMIO_BASE+0x0000B210)  
 // Register to Disable = Clear = Mask IRQs 31..0

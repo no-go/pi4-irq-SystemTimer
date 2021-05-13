@@ -1,7 +1,7 @@
 .section ".text.boot"
 
-#define _STACK      0x8000
-.extern _regs
+#define _STACK          0x8000
+
 .extern main
 .extern dispatch
 
@@ -58,16 +58,16 @@ GET32:
     // mov pc, lr
     bx lr
 
-// based on https://github.com/rsta2/circle
-.global interrupt_vector
 interrupt_vector:
-    sub     lr, lr, #4                  /* lr: return address */
-    stmfd   sp!, {r0-r3, r12, lr}       /* save r0-r3, r12 and return address */
-    ldr     r0, =IRQReturnAddress       /* store return address for profiling */
-    str     lr, [r0]
+    sub     lr, lr, #4
+    srsdb   sp!, #0x13
+    cpsid   if, #0x13
+    push    {r0-r3, r12, lr}
+    and     r1, sp, #4
+    sub     sp, sp, r1
+    push    {r1}
     bl      dispatch
-    ldmfd   sp!, {r0-r3, r12, pc}       /* restore registers and return */
-
-.global IRQReturnAddress
-IRQReturnAddress:
-    .word   0
+    pop     {r1}
+    add     sp, sp, r1
+    pop     {r0-r3, r12, lr}
+    rfeia   sp!
