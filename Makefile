@@ -21,9 +21,9 @@ startup.o: startup.S
 
 kernel8.img: startup.o $(OFILES)
 	$(TOOLCHAIN_PATH)/$(LINKER) $(LDFLAGS) startup.o $(OFILES) -T link.ld -o kernel8.elf
-	$(TOOLCHAIN_PATH)/$(OBJCPY) -O binary kernel8.elf kernel8.img
+	$(TOOLCHAIN_PATH)/$(OBJCPY) -O binary kernel8.elf sdcard/kernel8.img
 
 clean:
-	$(DELETE) -rf kernel8.img
+	$(DELETE) -rf sdcard/kernel8.img
 	$(DELETE) -rf startup.o kernel8.elf $(OFILES)
 
