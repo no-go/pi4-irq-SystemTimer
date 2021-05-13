@@ -49,6 +49,11 @@ Then cross your fingers and do `make`.
 
 Take a look into `config.txt` for additional files you need.
 
+## A Graphical Clock and Pi1
+
+Look into the `someGraphics` and `someGraphics_pi1` Branch. There is a cool digital graphical clock
+and a good comparison between Pi1 and Pi4 interrupt handling.
+
 ## Links and Sources
 
 This code is the best minimal mix from serveral different open source projects:
