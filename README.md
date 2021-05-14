@@ -16,3 +16,9 @@ Because I have 2 old Pi1, I try to migrate my new Pi4 stuff back to Pi1.
 - other boot start address
 - Assemblercode complete different
 - completly different exception handling / vector
+
+## this branch
+
+- Pi1 on 1024x768
+- Set hours and mintutes with GPIO 17,18 (to ground)
+- float numbers in code ?! not working

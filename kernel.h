@@ -49,6 +49,7 @@ enum {
 
 // GPIOs
 #define GPFSEL1         (MMIO_BASE+0x00200004)
+#define GPLEV0          (MMIO_BASE+0x00200034)
 #define GPPUD           (MMIO_BASE+0x00200094)
 #define GPPUDCLK0       (MMIO_BASE+0x00200098)
 

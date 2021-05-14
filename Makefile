@@ -1,7 +1,7 @@
 TOOLCHAIN_PATH = /home/tux/bin/aarch32/gcc-arm-10.2-2020.11-x86_64-arm-none-eabi/bin
 ASM = arm-none-eabi-gcc
 CXX = arm-none-eabi-gcc
-LINKER = arm-none-eabi-ld
+LINKER = arm-none-eabi-gcc
 OBJCPY = arm-none-eabi-objcopy
 
 # gcc -c -Q -march=native --help=target 
@@ -11,8 +11,12 @@ OFILES = $(CFILES:.c=.o)
 INCLUDES = -I./
 GCCFLAGS = -Wall -O0 \
 	-march=armv6zk -mcpu=arm1176jzf-s \
+	-mfpu=vfp -mfloat-abi=hard \
 	-ffreestanding -nostdinc -nostdlib -nostartfiles
-LDFLAGS = -nostdlib -nostartfiles $(INCLUDES)
+LDFLAGS = \
+	-march=armv6zk -mcpu=arm1176jzf-s \
+	-mfpu=vfp -mfloat-abi=hard \
+	-nostdlib -nostartfiles $(INCLUDES)
 DELETE = rm
 
 all: clean kernel.img
