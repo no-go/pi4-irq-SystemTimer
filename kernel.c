@@ -1,6 +1,7 @@
 #include "kernel.h"
 
-#define FONTPADDING 10
+#define FONTPADDING 40
+#define FONTSIZE    300
 
 // a properly aligned message buffer with: 9x4 byte long mes-
 // sage setting feature PL011 UART Clock to 3MHz (and some TAGs and
@@ -10,8 +11,8 @@ volatile unsigned int __attribute__((aligned(16))) mbox[9] = { 9*4, 0, 0x38002, 
 // better: reuse mbox
 volatile unsigned int __attribute__((aligned(16))) graphics_message[31] = {
     31*4, 0,
-    0x48003, 8,8, 640,480,
-    0x48004, 8,8, 640,480,
+    0x48003, 8,8, 1920,1080,
+    0x48004, 8,8, 1920,1080,
     0x48009, 8,8, 0,0,
     0x48005, 4,4, 32, // 32bits per pixel
     0x48006, 4,4, 1, // 1 = ARGB
@@ -301,18 +302,18 @@ void setHHMM (int d1, int d2) {
     hours = d1;
     minutes = d2;
     
-    rect(0,100,640,300, C_black, C_black);
+    rect(0,FONTSIZE-2,graphics_width,FONTSIZE*2+4, C_black, C_black);
     
     if (d1<10) {
-        myFont(58, 120, d1, 140, C_white, C_black);
+        myFont(2*FONTPADDING+FONTSIZE, FONTSIZE, d1, FONTSIZE, C_white, C_black);
     } else {
-        myFont(10, 120, d1, 140, C_white, C_black);
+        myFont(FONTPADDING, FONTSIZE, d1, FONTSIZE, C_white, C_black);
     }
     if (d2<10) {
-        myFont(245, 120, 0, 140, C_white, C_black);
-        myFont(325, 120, d2, 140, C_white, C_black);
+        myFont(graphics_width/2 - FONTPADDING/2 - FONTSIZE/2, FONTSIZE, 0, FONTSIZE, C_white, C_black);
+        myFont(graphics_width/2 + FONTPADDING/2, FONTSIZE, d2, FONTSIZE, C_white, C_black);
     } else {
-        myFont(245, 120, d2, 140, C_white, C_black);
+        myFont(graphics_width/2 - FONTPADDING/2 - FONTSIZE/2, FONTSIZE, d2, FONTSIZE, C_white, C_black);
     }
     tenthsec = 0;
     old_tenthsec = 0;
@@ -388,66 +389,66 @@ void main () {
 
         if (tenthsec >= 600) {
             if (minutes < 10) {
-                myFont(245, 120, 0, 140, C_black, C_black);
-                myFont(325, 120, minutes, 140, C_black, C_black);
+                myFont(graphics_width/2 - FONTPADDING/2 - FONTSIZE/2, FONTSIZE, 0, FONTSIZE, C_black, C_black);
+                myFont(graphics_width/2 + FONTPADDING/2, FONTSIZE, minutes, FONTSIZE, C_black, C_black);
             } else {
-                myFont(245, 120, minutes, 140, C_black, C_black);
+                myFont(graphics_width/2 - FONTPADDING/2 - FONTSIZE/2, FONTSIZE, minutes, FONTSIZE, C_black, C_black);
             }
 
             minutes++;
             tenthsec = 0;
             
             if (minutes < 10) {
-                myFont(245, 120, 0, 140, C_white, C_black);
-                myFont(325, 120, minutes, 140, C_white, C_black);
+                myFont(graphics_width/2 - FONTPADDING/2 - FONTSIZE/2, FONTSIZE, 0, FONTSIZE, C_white, C_black);
+                myFont(graphics_width/2 + FONTPADDING/2, FONTSIZE, minutes, FONTSIZE, C_white, C_black);
             } else {
-                if (minutes < 60) myFont(245, 120, minutes, 140, C_white, C_black);
+                if (minutes < 60) myFont(graphics_width/2 - FONTPADDING/2 - FONTSIZE/2, FONTSIZE, minutes, FONTSIZE, C_white, C_black);
             }
         }
         
         if (minutes == 60) {
             colorbar = C_black;
             if (hours < 10) {
-                myFont(85, 120, hours, 140, C_black, C_black);
+                myFont(2*FONTPADDING+FONTSIZE, FONTSIZE, hours, FONTSIZE, C_black, C_black);
             } else {
-                myFont(10, 120, hours, 140, C_black, C_black);
+                myFont(FONTPADDING, FONTSIZE, hours, FONTSIZE, C_black, C_black);
             }
-            myFont(245, 120, 59, 140, C_black, C_black);
+            myFont(graphics_width/2 - FONTPADDING/2 - FONTSIZE/2, FONTSIZE, 59, FONTSIZE, C_black, C_black);
             hours++;
             minutes = 0;
-            myFont(245, 120, 0, 140, C_white, C_black);
-            myFont(325, 120, 0, 140, C_white, C_black);
+            myFont(graphics_width/2 - FONTPADDING/2 - FONTSIZE/2, FONTSIZE, 0, FONTSIZE, C_white, C_black);
+            myFont(graphics_width/2 + FONTPADDING/2, FONTSIZE, 0, FONTSIZE, C_white, C_black);
 
             if (hours == 24) {
-                myFont(10, 120, 23, 140, C_black, C_black);
+                myFont(FONTPADDING, FONTSIZE, 23, FONTSIZE, C_black, C_black);
                 hours = 0;
-                myFont(85, 120, hours, 140, C_white, C_black);
+                myFont(2*FONTPADDING+FONTSIZE, FONTSIZE, hours, FONTSIZE, C_white, C_black);
             } else {
                 if (hours < 10) {
-                    myFont(85, 120, hours, 140, C_white, C_black);
+                    myFont(2*FONTPADDING+FONTSIZE, FONTSIZE, hours, FONTSIZE, C_white, C_black);
                 } else {
-                    myFont(10, 120, hours, 140, C_white, C_black);
+                    myFont(FONTPADDING, FONTSIZE, hours, FONTSIZE, C_white, C_black);
                 }
             }
         }
         
         if (tenthsec/10 != old_tenthsec) {
-            pos = 480;
+            pos = graphics_width - 2*FONTPADDING - FONTSIZE;
             if (tenthsec/10 == 0) {
-                myFont(pos, 120, 59, 140, C_black, C_black);
+                myFont(pos, FONTSIZE, 59, FONTSIZE, C_black, C_black);
             } else if (tenthsec/10 < 10) {
-                pos = myFont(pos, 120, 0, 140, C_white, C_black);
+                pos = myFont(pos, FONTSIZE, 0, FONTSIZE, C_white, C_black);
                 pos += FONTPADDING;
-                myFont(pos, 120, old_tenthsec, 140, C_black, C_black);
-                myFont(pos, 120, tenthsec/10, 140, C_white, C_black);
+                myFont(pos, FONTSIZE, old_tenthsec, FONTSIZE, C_black, C_black);
+                myFont(pos, FONTSIZE, tenthsec/10, FONTSIZE, C_white, C_black);
             } else if (tenthsec/10 == 10) {
-                pos = myFont(pos, 120, 0, 140, C_black, C_black);
+                pos = myFont(pos, FONTSIZE, 0, FONTSIZE, C_black, C_black);
                 pos += FONTPADDING;
-                myFont(pos, 120, old_tenthsec, 140, C_black, C_black);
-                myFont(480, 120, tenthsec/10, 140, C_white, C_black);
+                myFont(pos, FONTSIZE, old_tenthsec, FONTSIZE, C_black, C_black);
+                myFont(graphics_width - 2*FONTPADDING - FONTSIZE, FONTSIZE, tenthsec/10, FONTSIZE, C_white, C_black);
             } else {
-                myFont(pos, 120, old_tenthsec, 140, C_black, C_black);
-                myFont(pos, 120, tenthsec/10, 140, C_white, C_black);
+                myFont(pos, FONTSIZE, old_tenthsec, FONTSIZE, C_black, C_black);
+                myFont(pos, FONTSIZE, tenthsec/10, FONTSIZE, C_white, C_black);
             }
             if (old_tenthsec%20 == 0) {
                 colorbar += 0x23261;
@@ -455,8 +456,9 @@ void main () {
             }
             old_tenthsec = tenthsec/10;
         }
-        line(20, 300, 20+tenthsec, 300, colorbar);
-        line(20, 301, 20+tenthsec, 301, colorbar);
-        line(20, 302, 20+tenthsec, 302, colorbar);
+        // start, end and scaling are hardcode on width
+        line(60, FONTSIZE*2 +2*FONTPADDING,   60+3*tenthsec, FONTSIZE*2 +2*FONTPADDING, colorbar);
+        line(60, FONTSIZE*2 +2*FONTPADDING+1, 60+3*tenthsec, FONTSIZE*2 +2*FONTPADDING+1, colorbar);
+        line(60, FONTSIZE*2 +2*FONTPADDING+2, 60+3*tenthsec, FONTSIZE*2 +2*FONTPADDING+2, colorbar);
     }
 }
