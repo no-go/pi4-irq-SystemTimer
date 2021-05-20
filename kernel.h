@@ -1,7 +1,7 @@
 #ifndef __THEKERNEL
 #define __THEKERNEL 1
 
-extern unsigned long _regs[37];
+extern unsigned long _regs[38];
 extern void dispatch (void);
 
 // implemented in startup.S 
@@ -39,8 +39,7 @@ extern unsigned int GET32 (unsigned int);
 
 // GPIOs
 #define GPFSEL0         (MMIO_BASE+0x00200000)
-#define GPPUD           (MMIO_BASE+0x00200094)
-#define GPPUDCLK0       (MMIO_BASE+0x00200098)
+#define GPPUPPDN0       (MMIO_BASE+0x002000E4)
 
 // PL011 UART
 #define UART3_DR        (MMIO_BASE+0x00201600)

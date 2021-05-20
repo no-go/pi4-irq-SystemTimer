@@ -70,6 +70,7 @@ GET32:
     ldr w0,[x0]
 ret
 
+/// @todo what is about the floating point registers!?
 _regs_save:
     str     x0, [sp, #-16]!     /* push org x0 value */
     ldr     x0, =_regs+8
@@ -103,23 +104,25 @@ _regs_save:
     str     x26, [x0], #8
     str     x27, [x0], #8
     str     x28, [x0], #8
-    str     x29, [x0], #8
-    ldr     x1, [sp], #16       // pop x30
-    str     x1, [x0], #8
+    ldp     x1, x2, [sp], #16       // pop x29, x30
+    stp     x1, x2, [x0], #16
+    mrs     x1, sp_el0
+    str     x1, [x0], #8        // _regs[31] = sp_el0
     mrs     x1, elr_el1
-    str     x1, [x0], #8        // _regs[31] = elr_el1
-    mrs     x1, spsr_el1        // the other registers for debugging
-    str     x1, [x0], #8
+    str     x1, [x0], #8        // _regs[32] = elr_el1
+    mrs     x1, spsr_el1        // the other registers for debugging/bluescreen
+    str     x1, [x0], #8        // 33
     mrs     x1, esr_el1
-    str     x1, [x0], #8
+    str     x1, [x0], #8        // 34
     mrs     x1, far_el1
-    str     x1, [x0], #8
+    str     x1, [x0], #8        // 35
     mrs     x1, sctlr_el1
-    str     x1, [x0], #8
+    str     x1, [x0], #8        // 36
     mrs     x1, tcr_el1
-    str     x1, [x0], #8
-    ret
+    str     x1, [x0], #8        // 37
+    ret                         // ret uses x0 as return value and uses x30 as return address
 
+/// @todo what is about the floating point registers!?
 _regs_load:
     ldr     x0, =_regs+8
     ldr     x1, [x0], #8
@@ -150,8 +153,7 @@ _regs_load:
     ldr     x26, [x0], #8
     ldr     x27, [x0], #8
     ldr     x28, [x0], #8
-    ldr     x29, [x0], #8
-    ret
+    ret                         // uses x0 as return value, uses x30 as return address
 
     .balign 0x800   // vector must be propper aligned!
 _vectors:
@@ -162,15 +164,21 @@ _vectors:
 
     // 0x80 aligned = max 32 instructions a 32 bit
     .balign 0x80    // IRQ (Asynchron)
-    str     x30, [sp, #-16]!
-    bl      _regs_save
+    stp     x29, x30, [sp, #-16]!    // push x29, x30
+    bl      _regs_save        // after that SP is at the same place than before
     bl      dispatch
+    // load x1..x28
     bl      _regs_load
-    ldr     x30, [x0], #8
-    ldr     x0, [x0]
+    // load x30 (=original return addr of interrupted task) from addr in x0, and add #8 to x0
+    ldp     x29, x30, [x0], #16
+    ldr     x1, [x0], #8        // _regs[31] with SP maybe changed by "dispatch()"
+    msr     sp_el0, x1
+    // load lr (=return addr into interrupted task) from addr in x0
+    ldr     x0, [x0]            // _regs[32] with LR maybe changed by "dispatch()"
     msr     elr_el1, x0
+    // finally load x0,x1 into x0,x1(again)
     ldr     x0, =_regs
-    ldr     x0, [x0]
+    ldp     x0, x1, [x0]
     eret
     
     .balign 0x80    // FIQ (Asynchron)
